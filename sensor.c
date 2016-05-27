@@ -94,9 +94,9 @@ main()
             {
                 while(cont<7)
                 {
-                    softPwmWrite(0,50);
+                    softPwmWrite(0,25);
                     delay(250);
-                    softPwmWrite(1,0);
+                    softPwmWrite(0,0);
                     delay(250);
                     cont++;
 
@@ -107,7 +107,7 @@ main()
             {
                 while(cont<7)
                 {
-                    softPwmWrite(4,50);
+                    softPwmWrite(4,25);
                     delay(250);
                     softPwmWrite(4,0);
                     delay(250);
@@ -120,7 +120,7 @@ main()
             {
                while(cont<7)
                 {
-                    softPwmWrite(5,50);
+                    softPwmWrite(5,25);
                     delay(250);
                     softPwmWrite(5,0);
                     delay(250);
