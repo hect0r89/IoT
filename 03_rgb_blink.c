@@ -6,18 +6,18 @@
 int main (void){
         int i;
         wiringPiSetup();
-        pinMode(1,PWM_OUTPUT);
+        pinMode(0,PWM_OUTPUT);
         pinMode(4,PWM_OUTPUT);
         pinMode(5, PWM_OUTPUT);
-        softPwmCreate(1,0,100);
+        softPwmCreate(0,0,100);
         softPwmCreate(4,0,100);
         softPwmCreate(5,0,100);
         for(;;){
             for(i = 0; i < 100; i++){
-                softPwmWrite(1,i);
+                softPwmWrite(0,i);
                 delay(50);
             }
-            softPwmWrite(1,0);
+            softPwmWrite(0,0);
             delay(500);
 
             for(i = 0; i < 100; i++){
