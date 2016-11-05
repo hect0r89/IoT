@@ -10,7 +10,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <wiringPi.h>
-#include <fcntl.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -24,31 +23,50 @@ double maxTemperature = 0.0;
 
 static void *handleCoolGauge(void *data)
 {
-    //increment or decrement value, initialized to 1.
-
-    for(;;)             //infinite loop
+    for(;;)
     {
         genieWriteObj(GENIE_OBJ_ANGULAR_METER, 0x00, temperature);
-
         genieWriteObj(GENIE_OBJ_METER, 0x00, humidity);
+        if(temperature>maxTemperature)
+        {
+            genieWriteObj(GENIE_OBJ_USER_LED, 0x00, 1);
+
+        }
+        else
+        {
+            genieWriteObj(GENIE_OBJ_USER_LED, 0x00, 0);
+
+        }
+
+        time_t t;
+        struct tm * timeinfo;
+        time(&t);
+        timeinfo = localtime(&t);
+        char dataSensor[256];
+        snprintf(dataSensor,256, "Temperatura: %f\nHumedad: %f\n",temperature, humidity);
+        genieWriteStr(0x00, dataSensor);
+        double horas = timeinfo->tm_hour;
+        double minutos = timeinfo->tm_min;
+        double segundos = timeinfo->tm_sec;
+
+        genieWriteObj(GENIE_OBJ_LED_DIGITS, 0x01, (horas*100)+minutos);
+        genieWriteObj(GENIE_OBJ_LED_DIGITS, 0x02, segundos);
+
+        usleep(80000);
     }
     return NULL;
 }
 
 void handleGenieEvent(struct genieReplyStruct * reply)
 {
-    if(reply->cmd == GENIE_REPORT_EVENT)    //check if the cmd byte is a report event
+    if(reply->cmd == GENIE_REPORT_EVENT)
     {
-        if(reply->object == GENIE_OBJ_KNOB) //check if the object byte is that of a slider
+        if(reply->object == GENIE_OBJ_KNOB)
         {
-            if(reply->index == 0)		  //check if the index byte is that of Slider0
-                //write to the LED digits object
+            if(reply->index == 0)
                 maxTemperature = reply->data;
-
         }
     }
-
-    //if the received message is not a report event, print a message on the terminal window
     else
         printf("Unhandled event: command: %2d, object: %2d, index: %d, data: %d \r\n", reply->cmd, reply->object, reply->index, reply->data);
 }
@@ -66,12 +84,6 @@ int main()
 
     (void)pthread_create (&myThread,  NULL, handleCoolGauge, NULL);
 
-
-
-
-
-
-
     file = open("/dev/i2c-1", O_RDWR);
     if(file<0)
     {
@@ -83,7 +95,6 @@ int main()
     {
         puts("Fallo al asignar bus");
     }
-    //holds the value of the cool gauge
 
 
     while(1)
@@ -94,13 +105,9 @@ int main()
             puts("Failed to write");
             exit(1);
         }
-
-        usleep(100000);
+        sleep(1);
 
         unsigned char buf[4] = {0};
-
-
-
 
         // Using I2C Read
         if (read(file,buf,4) < 0)
@@ -118,7 +125,7 @@ int main()
             time(&t);
             timeinfo = localtime(&t);
             printf("%s", asctime(timeinfo));
-            //printf("%d-%d-%d %d:%d:%d:%d\n", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+
 
             int reading_hum = (buf[0] << 8)+ buf[1];
             humidity = reading_hum / 16382.0 * 100.0;
@@ -128,44 +135,20 @@ int main()
             temperature = reading_temp/16382.0 * 165.0 - 40;
             printf("Temperatura: %f\n",temperature);
 
-            //increment or decrement value, initialized to 1.
 
-            if(temperature>maxTemperature)
+
+
+
+            while(genieReplyAvail())
             {
-                genieWriteObj(GENIE_OBJ_USER_LED, 0x00, 1);
-
+                genieGetReply(&reply);
+                handleGenieEvent(&reply);
             }
-            else
-            {
-                genieWriteObj(GENIE_OBJ_USER_LED, 0x00, 0);
-
-            }
-
-            while(genieReplyAvail())      //check if a message is available
-            {
-                genieGetReply(&reply);      //take out a message from the events buffer
-                handleGenieEvent(&reply);   //call the event handler to process the message
-            }
-                           //10-millisecond delay.Don't hog the
-
-
-
-            //write to Coolgauge0
-
-            ussleep(1000);    //10-millisecond delay
-            //increment or decrement
-
-
-
-
-
 
 
 
         }
 
-
-        //printf("Channel %02d Data:  %04f\n",channel,data);
     }
     return 0;
 
